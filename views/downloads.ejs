@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <title></title>
+    <link href="/css/thumbnail.css" rel="stylesheet">
+    <link href="/css/bootstrap.min.css" rel="stylesheet">
+    <script type="text/javascript" src="/js/jquery.min.js"></script>
+    <script type="text/javascript" src="/js/jquery.jscroll.min.js"></script>
+    <script type="text/javascript"
+            src="//malihu.github.io/custom-scrollbar/jquery.mCustomScrollbar.concat.min.js"></script>
+    <script type="text/javascript" src="/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+<div class="container">
+    <h3 id="no-downloads" style="text-align:center;<%= Object.keys(downloads).length == 0 ? '' : 'display: none;' %>">There are no current downloads.</h3>
+    <div id="downloads" class="row" style="<%= Object.keys(downloads).length == 0 ? 'display: none;' : '' %>">
+        <% var _downloads = []; %>
+        <% for (var _download in downloads) { %>
+        <%  if (downloads.hasOwnProperty(_download)){_downloads.push(downloads[_download])} %>
+        <% } %>
+        <% for (var download of _downloads.reverse()) { %>
+        <div class="col-xs-6 col-sm-4 col-md-3" id="container-<%= download.id %>">
+            <div class="thumbnail">
+                <div class="caption overlay">
+                    <h4><%= download.title %></h4>
+                    <div class="progress">
+                        <div id="progress-<%= download.id %>" class="progress-bar progress-bar-striped <%= download.progress == 1 ? "" : "active" %>" role="progressbar" aria-valuenow="2" aria-valuemin="0" aria-valuemax="100" style="min-width: 2em; width: <%= Math.floor(download.progress*100) %>%;">
+                            <%= Math.floor(download.progress*100) %>%
+                        </div>
+                    </div>
+                    <h5 id="remaining-<%= download.id %>"><%= download.remaining.hours + ':' + (download.remaining.minutes < 10 ? '0' : '') + download.remaining.minutes + ':' + (download.remaining.seconds < 10 ? '0' : '') + download.remaining.seconds %> remaining</h5>
+                </div>
+                <img src="<%= download.thumbnail %>" alt="<%= download.title %>">
+            </div>
+        </div>
+        <% } %>
+    </div>
+</div>
+<script type="text/javascript">
+    var socket = io('/downloads');
+    var myDat = undefined;
+    socket.on('update downloads', function(data) {
+        if (typeof data.movies !== "object") return;
+        if (Object.keys(data.movies).length > 0) {
+            $('#no-downloads').fadeOut(function() {
+                $('#downloads').fadeIn();
+            });
+        }
+        for (var _movie in data.movies) {
+            if (!data.movies.hasOwnProperty(_movie))continue;
+            var movie = data.movies[_movie];
+            var progress = $('#progress-' + movie.id);
+            if (progress.length == 0) {
+                var element = $('<div class="col-xs-6 col-sm-4 col-md-3" id="container-' + movie.id + '"><div class="thumbnail"><div class="caption overlay"><h4>' + movie.title + '</h4><div class="progress"><div id="progress-' +  movie.id + '" class="progress-bar progress-bar-striped ' + (movie.progress == 1 ? "" : "active") + '" role="progressbar" aria-valuenow="2" aria-valuemin="0" aria-valuemax="100" style="min-width: 2em; width: ' + Math.floor(movie.progress*100) + '%;"> ' + Math.floor(movie.progress*100) + '%</div></div><h5 id="remaining-' + movie.id + '">' + movie.remaining.hours + ':' + (movie.remaining.minutes < 10 ? '0' : '') + movie.remaining.minutes + ':' + (movie.remaining.seconds < 10 ? '0' : '') + movie.remaining.seconds + ' remaining</h5></div><img src="' + movie.thumbnail + '" alt="' + movie.title + '"></div></div>');
+                $('#downloads').prepend(element);
+                progress = $('#progress-' + movie.id);
+            }
+            var remaining = $('#remaining-' + movie.id);
+            progress.css({width: Math.floor(movie.progress*100) + '%'});
+            progress.text(Math.floor(movie.progress*100) + '%');
+            remaining.text(movie.remaining.hours + ':' + (movie.remaining.minutes < 10 ? '0' : '') + movie.remaining.minutes + ':' + (movie.remaining.seconds < 10 ? '0' : '') + movie.remaining.seconds + ' remaining');
+            if (movie.progress == 1) {
+                progress.removeClass('active');
+            }
+        }
+    });
+</script>
+</body>
+</html>

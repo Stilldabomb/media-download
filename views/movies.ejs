@@ -1,0 +1,57 @@
+<% if (typeof data.movies === "undefined" || data.movies.length == 0) { %>
+<h3>No movies found.</h3>
+<%
+} else {
+    if (!String.prototype.format) {
+        String.prototype.format = function () {
+            var args = arguments;
+            return this.replace(/{(\d+)}/g, function (match, number) {
+                return typeof args[number] != 'undefined' ? args[number] : match;
+            });
+        };
+    }
+
+    var trackers = [
+        'udp://open.demonii.com:1337/announce',
+        'udp://tracker.openbittorrent.com:80',
+        'udp://tracker.coppersurfer.tk:6969',
+        'udp://glotorrents.pw:6969/announce',
+        'udp://tracker.opentrackr.org:1337/announce',
+        'udp://torrent.gresille.org:80/announce',
+        'udp://p4p.arenabg.com:1337',
+        'udp://tracker.leechers-paradise.org:6969'
+    ];
+    var format = 'magnet:?xt=urn:btih:{0}&dn={1}&tr=' + trackers.join('&tr=');
+
+data.movies.forEach(function(movie) {
+    var torrent;
+    if (typeof movie.torrents === "undefined") return;
+    for (var tor of movie.torrents) {
+        if (tor.quality == "3D") {
+            continue;
+        }
+        if (torrent && torrent.quality == "720p") {
+            break;
+        }
+        torrent = tor;
+    } %>
+<div class="col-xs-6 col-sm-4 col-md-3">
+    <div class="thumbnail">
+        <div class="caption">
+            <h4><%= movie.title_long %></h4>
+            <h5><%= movie.rating %> &#x2605;'s // <%= movie.runtime %> mins // <a href="#" data-magnet="<%= format.format(torrent.hash, encodeURIComponent(movie.title_long)) %>"
+                                                                                  data-title="<%= movie.title_long %>"
+                                                                                  data-thumbnail="<%= movie.large_cover_image %>">Download</a>
+            </h5>
+            <p style="text-align:left;font-size:12px"><%= movie.synopsis %></p>
+        </div>
+        <img src="<%= movie.large_cover_image %>" alt="<%= movie.title_long %>">
+    </div>
+</div>
+<% }); %>
+<script type="text/javascript">$(function () {
+        if (typeof setLinks === "function")setLinks();
+    })</script>
+<% if (data.movies.length == 50) { %>
+<a href="/page/<%= typeof nextPage === "undefined" ? (data.page_number + 1) : nextPage %>">Next Page</a>
+<% }} %>
